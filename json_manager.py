@@ -1,17 +1,31 @@
 import json
 import os
+import importlib.resources as pkg_resources
+from pathlib import Path, PurePath
+import subprocess
 from typing import Dict, Any, Optional, List
 
 class JSONDataManager:
     def __init__(self, filepath: str = "data.json"):
+        # 1. Get the path to the user's Documents folder
+        docs_path = Path.home() / "Documents"
+
+        # 2. Define the hidden directory name
+        # On macOS/Linux, prefix with a dot (.). On Windows, a dot alone doesn't hide it natively without attrib.
+        hidden_dir = docs_path / ".jsondata"
         """Initialize the JSON Data Manager with a file path."""
-        self.filepath = filepath
+        print(f"pt: '{docs_path}', hidden_dir: '{hidden_dir}'")
+        hidden_dir.mkdir(parents=True, exist_ok=True)
+        if os.name == "nt":
+            subprocess.run(['attrib', '+h', str(hidden_dir)])
+        self.filepath = str(hidden_dir / PurePath(filepath))
         self.data = self.load_data()
 
     def load_data(self) -> Dict[str, Any]:
         """Load data from JSON file."""
+        print(f"📂 Loading data....")
         if not os.path.exists(self.filepath):
-            print(f"File '{self.filepath}' not found. Creating new file.")
+            # print(f"File '{self.filepath}' not found. Creating new file.")
             return {"entries": {}}
         
         try:
@@ -31,7 +45,7 @@ class JSONDataManager:
         try:
             with open(self.filepath, 'w') as file:
                 json.dump(self.data, file, indent=2)
-            print(f"✅ Data saved successfully to '{self.filepath}'")
+            print(f"✅ Data saved successfully")
         except Exception as e:
             print(f"❌ Error saving data: {e}")
 
