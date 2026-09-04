@@ -120,7 +120,7 @@ class JSONDataManager:
         entries = self.data.get("entries", {})
         return entries.get(entry_id)
 
-    def update_entry(self, entry_id: str) -> bool:
+    def update_entry(self, entry_id: str):
         """Update an entry by ID with interactive prompts."""
         entries = self.data.get("entries", {})
         
@@ -140,43 +140,54 @@ class JSONDataManager:
         print("4. Cancel")
         
         choice = input("\nChoose option (1-4): ").strip()
+
+        updated = self.__update_entry(entry_id, choice)
+        while not updated:
+            self.__update_entry(entry_id, choice)  # Prompt again for a valid choice
+        if choice in ['1', '2', '3']:
+            self.update_entry(entry_id)
         
+    def __update_entry(self, entry_id: str, choice: str) -> bool:
+        entries = self.data.get("entries", {})
+        entry = entries[entry_id]
         if choice == '1':
             key = input("Enter key to modify: ").strip()
+            if key == "":
+                return True
             if key not in entry:
                 print(f"❌ Key '{key}' not found in this entry.")
                 return False
-            
             new_value = input(f"Enter new value for '{key}': ").strip()
             entry[key] = new_value
             self.data["entries"][entry_id] = entry
             self.save_data()
             print(f"✅ Key '{key}' updated successfully!")
             return True
-        
+
         elif choice == '2':
             key = input("Enter new key: ").strip()
-            if not key:
-                print("⚠️  Key cannot be empty.")
-                return False
-            
+            if key == "":
+                return True
+                
             if key in entry:
                 print(f"❌ Key '{key}' already exists. Use modify option to change it.")
                 return False
-            
+                
             value = input(f"Enter value for '{key}': ").strip()
             entry[key] = value
             self.data["entries"][entry_id] = entry
             self.save_data()
             print(f"✅ Key '{key}' added successfully!")
             return True
-        
+                
         elif choice == '3':
             key = input("Enter key to delete: ").strip()
+            if key == "":
+                return True
             if key not in entry:
                 print(f"❌ Key '{key}' not found in this entry.")
                 return False
-            
+                
             confirm = input(f"Are you sure you want to delete '{key}'? (yes/no): ").lower().strip()
             if confirm == 'yes':
                 del entry[key]
@@ -186,11 +197,11 @@ class JSONDataManager:
                 return True
             else:
                 print("Deletion cancelled.")
-                return False
-        
+                return True
+            
         else:
             print("Update cancelled.")
-            return False
+            return True
 
     def delete_entry(self, entry_id: str) -> bool:
         """Delete an entry by ID."""

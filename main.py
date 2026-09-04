@@ -81,12 +81,11 @@ def update_entry(manager: JSONDataManager):
     entry_id = input("\n🔧 Enter ID of entry to update: ").strip()
     
     if not entry_id:
-        print("⚠️  ID cannot be empty.")
         return
     
     if not manager.entry_exists(entry_id):
         print(f"❌ Entry with ID '{entry_id}' not found.")
-        return
+        update_entry(manager)  # Prompt again for a valid ID
     
     manager.update_entry(entry_id)
 
@@ -95,12 +94,11 @@ def delete_entry(manager: JSONDataManager):
     entry_id = input("\n🗑️  Enter ID of entry to delete: ").strip()
     
     if not entry_id:
-        print("⚠️  ID cannot be empty.")
         return
     
     if not manager.entry_exists(entry_id):
         print(f"❌ Entry with ID '{entry_id}' not found.")
-        return
+        delete_entry(manager)  # Prompt again for a valid ID
     
     manager.delete_entry(entry_id)
 
