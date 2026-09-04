@@ -14,7 +14,6 @@ class JSONDataManager:
         # On macOS/Linux, prefix with a dot (.). On Windows, a dot alone doesn't hide it natively without attrib.
         hidden_dir = docs_path / ".jsondata"
         """Initialize the JSON Data Manager with a file path."""
-        print(f"pt: '{docs_path}', hidden_dir: '{hidden_dir}'")
         hidden_dir.mkdir(parents=True, exist_ok=True)
         if os.name == "nt":
             subprocess.run(['attrib', '+h', str(hidden_dir)])
@@ -25,7 +24,6 @@ class JSONDataManager:
         """Load data from JSON file."""
         print(f"📂 Loading data....")
         if not os.path.exists(self.filepath):
-            # print(f"File '{self.filepath}' not found. Creating new file.")
             return {"entries": {}}
         
         try:
