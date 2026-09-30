@@ -5,6 +5,9 @@ from pathlib import Path, PurePath
 import subprocess
 from typing import Dict, Any, Optional, List
 
+from menu_helper import MenuHelper
+from objects.menu_item import MenuItem
+
 class JSONDataManager:
     def __init__(self, filepath: str = "data.json"):
         # 1. Get the path to the user's Documents folder
@@ -128,88 +131,80 @@ class JSONDataManager:
             print(f"❌ Entry with ID '{entry_id}' not found.")
             return False
         
-        entry = entries[entry_id]
-        print(f"\n📝 Updating entry with ID '{entry_id}'")
-        print("Current entry:")
-        self.display_entry(entry_id, entry)
-        
-        print("\n🔧 Update options:")
-        print("1. Modify existing key")
-        print("2. Add new key")
-        print("3. Delete key")
-        print("4. Cancel")
-        
-        choice = input("\nChoose option (1-4): ").strip()
+        actions = self.__get_actions()
+        menu_helper = MenuHelper(actions, "🔧 Update options")
+        exit_program = False
+        while not exit_program:
+            action = menu_helper.view_menu()
+            action.action(entry_id)
+            exit_program = action.title == "Cancel"
+        self.save_data()
 
-        updated = self.__update_entry(entry_id, choice)
-        while not updated:
-            self.__update_entry(entry_id, choice)  # Prompt again for a valid choice
-        if choice in ['1', '2', '3']:
-            self.update_entry(entry_id)
-        
-    def __update_entry(self, entry_id: str, choice: str) -> bool:
+    def __get_actions(self):
+        return {
+            1: MenuItem("View entry", self.__display),
+            2: MenuItem("Add/Update entry", self.__update),
+            3: MenuItem("Delete entry", self.__delete),
+            4: MenuItem("Cancel", self.__cancel),
+        }
+
+    def __display(self, entry_id:str) -> bool:
         entries = self.data.get("entries", {})
         entry = entries[entry_id]
-        if choice == '1':
-            key = input("Enter key to modify: ").strip()
-            if key == "":
-                return True
-            if key not in entry:
-                print(f"❌ Key '{key}' not found in this entry.")
-                return False
-            new_value = input(f"Enter new value for '{key}': ").strip()
-            entry[key] = new_value
-            self.data["entries"][entry_id] = entry
-            self.save_data()
-            print(f"✅ Key '{key}' updated successfully!")
-            return True
+        self.display_entry(entry_id, entry)
+        return True
 
-        elif choice == '2':
-            key = input("Enter new key: ").strip()
-            if key == "":
-                return True
-                
-            if key in entry:
-                print(f"❌ Key '{key}' already exists. Use modify option to change it.")
-                return False
-                
-            value = input(f"Enter value for '{key}': ").strip()
-            entry[key] = value
-            self.data["entries"][entry_id] = entry
-            self.save_data()
-            print(f"✅ Key '{key}' added successfully!")
+    def __update(self, entry_id:str) -> bool:
+        entries = self.data.get("entries", {})
+        entry = entries[entry_id]
+        key = input("Enter key to modify: ").strip()
+        if key == "":
             return True
-                
-        elif choice == '3':
-            key = input("Enter key to delete: ").strip()
-            if key == "":
-                return True
-            if key not in entry:
-                print(f"❌ Key '{key}' not found in this entry.")
-                return False
-                
-            confirm = input(f"Are you sure you want to delete '{key}'? (yes/no): ").lower().strip()
-            if confirm == 'yes':
-                del entry[key]
-                self.data["entries"][entry_id] = entry
-                self.save_data()
-                print(f"✅ Key '{key}' deleted successfully!")
-                return True
-            else:
-                print("Deletion cancelled.")
-                return True
-            
+        if key not in entry:
+            print(f"Adding new key '{key}' to the entry {entry_id}.")
         else:
-            print("Update cancelled.")
+            print(f"Modifying existing key '{key}' in the entry {entry_id}.")
+            print(f"Current value: {entry[key]}")
+
+        new_value = input(f"Enter new value for '{key}': ").strip()
+        entry[key] = new_value
+        self.data["entries"][entry_id] = entry
+        print(f"✅ Key '{key}' updated successfully!")
+        return True
+
+    def __delete(self, entry_id:str) -> bool:
+        entries = self.data.get("entries", {})
+        entry = entries[entry_id]
+        key = input("Enter key to delete: ").strip()
+        if key == "":
+            return True
+        if key not in entry:
+            print(f"❌ Key '{key}' not found in this entry.")
+            return False
+
+        confirm = input(f"Are you sure you want to delete '{key}'? (yes/no): ").lower().strip()
+        if confirm == 'yes':
+            del entry[key]
+            self.data["entries"][entry_id] = entry
+            print(f"✅ Key '{key}' deleted successfully!")
+            return True
+        else:
+            print("Deletion cancelled.")
             return True
 
+    def __cancel(self, _:str) -> bool:
+        print("Update cancelled.")
+        return True
+    
     def delete_entry(self, entry_id: str) -> bool:
         """Delete an entry by ID."""
         entries = self.data.get("entries", {})
         
-        if entry_id not in entries:
+        while entry_id not in entries:
             print(f"❌ Entry with ID '{entry_id}' not found.")
-            return False
+            entry_id = input("\n🗑️  Enter ID of entry to delete: ").strip()
+            if entry_id == "":
+                return False
         
         print(f"\n🗑️  Entry to delete (ID: '{entry_id}'):")
         self.display_entry(entry_id, entries[entry_id])

@@ -8,19 +8,9 @@ Features string-based IDs and flexible key-value pair structure.
 import os
 import subprocess
 
+from menu_helper import MenuHelper
 from json_manager import JSONDataManager
 from objects.menu_item import MenuItem
-
-menuViewed = False
-
-def print_menu():
-    """Display the main menu."""
-    print("="*60)
-    print("     📊 JSON DATA MANAGER")
-    print("="*60)
-    for k in [k for k in actions if k > 0]:
-        print(k, ":", actions[k].title)
-    print("="*60)
 
 def view_all(manager: JSONDataManager):
     """View all entries."""
@@ -86,8 +76,8 @@ def update_entry(manager: JSONDataManager):
     if not manager.entry_exists(entry_id):
         print(f"❌ Entry with ID '{entry_id}' not found.")
         update_entry(manager)  # Prompt again for a valid ID
-    
-    manager.update_entry(entry_id)
+    else:
+        manager.update_entry(entry_id)
 
 def delete_entry(manager: JSONDataManager):
     """Delete an entry interactively."""
@@ -116,8 +106,7 @@ def view_by_id(manager: JSONDataManager):
     else:
         print(f"❌ Entry with ID '{entry_id}' not found.")
 
-actions = {
-    -1 : MenuItem("", lambda _: globals().update(menuViewed=False)),
+actions : dict[int, MenuItem] = {
     0: MenuItem("", lambda _: print("❌ Invalid choice. Please select a valid option from menu.")),
     1: MenuItem("View all entries", view_all),
     2: MenuItem("Search entries", search_entries),
@@ -125,39 +114,8 @@ actions = {
     4: MenuItem("Update entry", update_entry),
     5: MenuItem("Delete entry", delete_entry),
     6: MenuItem("View entry by ID", view_by_id),
-    7: MenuItem("Clear screen", lambda _: subprocess.run('cls' if os.name == 'nt' else 'clear', shell=True)),
-    8: MenuItem("Exit", lambda _: print("\n👋 Goodbye! Your data has been saved."))
+    7: MenuItem("Exit", lambda _: print("\n👋 Goodbye! Your data has been saved."))
 }
-
-def validate_input(choice):
-    """
-    Validate user input for menu choice.
-    Returns the integer choice if valid, otherwise returns 0.
-    """
-    try:
-        if choice.lower() == 'y':
-            return -1  # Special case for viewing menu again
-        choice_int = int(choice)
-        if(choice_int in actions):
-            return choice_int
-        return 0
-    except (ValueError, TypeError):
-        return 0
-
-
-def main_menu(manager):
-    global menuViewed
-    w = "Choose an option from menu "
-    if(menuViewed == False):
-        print_menu()
-    else:
-        w += ". View menu (y)"
-    menuViewed = True
-    choice = input(f"{w}: ").strip()
-    choice_int = validate_input(choice)
-    action = actions[choice_int]
-    action.action(manager)
-    return action.title == "Exit"
 
 def main():
     """Main CLI loop."""
@@ -166,14 +124,16 @@ def main():
     print("\n" + "🎉 " * 15)
     print("Welcome to JSON Data Manager!")
     print("🎉 " * 15)
-
+    menu_helper = MenuHelper(actions, "📊 JSON DATA MANAGER")
+    exit_program = False
     try:
-        while True:
-            exit_program = main_menu(manager)
-            if exit_program:
-                break
+        while not exit_program:
+            action = menu_helper.view_menu()
+            action.action(manager)
+            exit_program = action.title == "Exit"
     except KeyboardInterrupt:
         print("\n\n👋 Exiting... Your data has been saved.")
+    return 0
 
 if __name__ == "__main__":
     main()
